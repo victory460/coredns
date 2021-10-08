@@ -2,6 +2,7 @@
 package dnstest
 
 import (
+	"runtime"
 	"time"
 
 	"github.com/miekg/dns"
@@ -19,6 +20,10 @@ type Recorder struct {
 	Len   int
 	Msg   *dns.Msg
 	Start time.Time
+	// CallerN holds string parameters of a call to runtime.Caller(N)
+	Caller1 string
+	Caller2 string
+	Caller3 string
 }
 
 // NewRecorder makes and returns a new Recorder,
@@ -36,7 +41,9 @@ func NewRecorder(w dns.ResponseWriter) *Recorder {
 // WriteMsg records the status code and calls the
 // underlying ResponseWriter's WriteMsg method.
 func (r *Recorder) WriteMsg(res *dns.Msg) error {
-	r.Rcode = res.Rcode
+	_, r.Caller1, _, _ = runtime.Caller(1)
+	_, r.Caller2, _, _ = runtime.Caller(2)
+	_, r.Caller3, _, _ = runtime.Caller(3)
 	// We may get called multiple times (axfr for instance).
 	// Save the last message, but add the sizes.
 	r.Len += res.Len()
