@@ -20,7 +20,7 @@ type Recorder struct {
 	Len   int
 	Msg   *dns.Msg
 	Start time.Time
-	// CallerN holds string parameters of a call to runtime.Caller(N)
+	// CallerN holds string return value of the call to runtime.Caller(N)
 	Caller1 string
 	Caller2 string
 	Caller3 string
