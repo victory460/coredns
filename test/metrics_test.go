@@ -68,6 +68,34 @@ func TestMetricsRefused(t *testing.T) {
 	}
 }
 
+func TestMetricsPlugin(t *testing.T) {
+	metricName := "coredns_dns_responses_total"
+	corefile := `example.org:0 {
+		whoami
+		prometheus localhost:0
+	}`
+
+	srv, udp, _, err := CoreDNSServerAndPorts(corefile)
+	if err != nil {
+		t.Fatalf("Could not get CoreDNS serving instance: %s", err)
+	}
+	defer srv.Stop()
+
+	m := new(dns.Msg)
+	m.SetQuestion("example.org.", dns.TypeA)
+
+	if _, err = dns.Exchange(m, udp); err != nil {
+		t.Fatalf("Could not send message: %s", err)
+	}
+
+	data := test.Scrape("http://" + metrics.ListenAddr + "/metrics")
+	_, labels := test.MetricValue(metricName, data)
+
+	if labels["plugin"] != "whoami" {
+		t.Errorf("Expected plugin value %s, but got %s", "whoami", labels["whoami"])
+	}
+}
+
 func TestMetricsAuto(t *testing.T) {
 	tmpdir, err := ioutil.TempDir(os.TempDir(), "coredns")
 	if err != nil {
