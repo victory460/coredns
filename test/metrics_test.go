@@ -53,7 +53,6 @@ func TestMetricsRefused(t *testing.T) {
 	if _, err = dns.Exchange(m, udp); err != nil {
 		t.Fatalf("Could not send message: %s", err)
 	}
-	time.Sleep(100 * time.Millisecond) // sleep a bit to allow actual metrics to be updated for sure.
 
 	data := test.Scrape("http://" + metrics.ListenAddr + "/metrics")
 	got, labels := test.MetricValue(metricName, data)
@@ -88,7 +87,6 @@ func TestMetricsPlugin(t *testing.T) {
 	if _, err = dns.Exchange(m, udp); err != nil {
 		t.Fatalf("Could not send message: %s", err)
 	}
-	time.Sleep(100 * time.Millisecond) // sleep a bit to allow actual metrics to be updated for sure.
 
 	data := test.Scrape("http://" + metrics.ListenAddr + "/metrics")
 	_, labels := test.MetricValue(metricName, data)
@@ -136,7 +134,6 @@ func TestMetricsAuto(t *testing.T) {
 	if _, err := dns.Exchange(m, udp); err != nil {
 		t.Fatalf("Could not send message: %s", err)
 	}
-	time.Sleep(100 * time.Millisecond) // sleep a bit to allow actual metrics to be updated for sure.
 
 	metricName := "coredns_dns_requests_total" // {zone, proto, family, type}
 
@@ -195,7 +192,6 @@ func TestMetricsSeveralBlocs(t *testing.T) {
 	if _, err = dns.Exchange(m, udp); err != nil {
 		t.Fatalf("Could not send message: %s", err)
 	}
-	time.Sleep(100 * time.Millisecond) // sleep a bit to allow actual metrics to be updated for sure.
 
 	beginCacheSize := test.ScrapeMetricAsInt(addrMetrics, cacheSizeMetricName, "", 0)
 
@@ -281,7 +277,6 @@ func TestMetricsAvailable(t *testing.T) {
 	if _, _, err := cl.Exchange(m, tcp); err != nil {
 		t.Fatalf("Could not send message: %s", err)
 	}
-	time.Sleep(100 * time.Millisecond) // sleep a bit to allow actual metrics to be updated for sure.
 
 	// we should have metrics from forward, cache, and metrics itself
 	if err := collectMetricsInfo(metrics.ListenAddr, procMetric, procCache, procCacheMiss, procForward); err != nil {
