@@ -33,7 +33,7 @@ func (m *Metrics) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg
 		// see https://github.com/coredns/coredns/blob/master/core/dnsserver/server.go#L318
 		rc = status
 	}
-	plugin := m.authoritativePlugin(rw.Caller1, rw.Caller2, rw.Caller3)
+	plugin := m.authoritativePlugin(rw.Caller)
 	vars.Report(WithServer(ctx), state, zone, rcode.ToString(rc), plugin, rw.Len, rw.Start)
 
 	return status, err
@@ -43,22 +43,16 @@ func (m *Metrics) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg
 func (m *Metrics) Name() string { return "prometheus" }
 
 // authoritativePlugin returns which of made the write, if none is found the empty string is returned.
-func (m *Metrics) authoritativePlugin(a, b, c string) string {
+func (m *Metrics) authoritativePlugin(caller [3]string) string {
 	// a b and c contain the full path of the caller, the plugin name 2nd last elements
 	// .../coredns/plugin/whoami/whoami.go --> whoami
 	// this is likely FS specific, so use filepath.
-	plug := filepath.Base(filepath.Dir(a))
-	if _, ok := m.plugins[plug]; ok {
-		return plug
-	}
-	plug = filepath.Base(filepath.Dir(b))
-	if _, ok := m.plugins[plug]; ok {
-		return plug
-	}
-	plug = filepath.Base(filepath.Dir(c))
-	if _, ok := m.plugins[plug]; ok {
-		return plug
-	}
+	for _, c := range caller {
+		plug := filepath.Base(filepath.Dir(c))
+		if _, ok := m.plugins[plug]; ok {
+			return plug
+		}
 
+	}
 	return ""
 }
