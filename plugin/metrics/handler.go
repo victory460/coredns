@@ -52,7 +52,6 @@ func (m *Metrics) authoritativePlugin(caller [3]string) string {
 		if _, ok := m.plugins[plug]; ok {
 			return plug
 		}
-
 	}
 	return ""
 }
