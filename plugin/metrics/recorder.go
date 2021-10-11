@@ -4,6 +4,7 @@ import (
 	"runtime"
 
 	"github.com/coredns/coredns/plugin/pkg/dnstest"
+
 	"github.com/miekg/dns"
 )
 
