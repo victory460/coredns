@@ -26,14 +26,11 @@ func (r *RoundRobinResponseWriter) WriteMsg(res *dns.Msg) error {
 }
 
 func roundRobin(in []dns.RR) []dns.RR {
-	cname := []dns.RR{}
 	address := []dns.RR{}
 	mx := []dns.RR{}
 	rest := []dns.RR{}
 	for _, r := range in {
 		switch r.Header().Rrtype {
-		case dns.TypeCNAME:
-			cname = append(cname, r)
 		case dns.TypeA, dns.TypeAAAA:
 			address = append(address, r)
 		case dns.TypeMX:
@@ -46,9 +43,8 @@ func roundRobin(in []dns.RR) []dns.RR {
 	roundRobinShuffle(address)
 	roundRobinShuffle(mx)
 
-	out := append(cname, rest...)
-	out = append(out, address...)
-	out = append(out, mx...)
+	out := append(address, mx...)
+	out = append(out, rest...)
 	return out
 }
 
