@@ -39,7 +39,12 @@ func (f File) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (i
 	// TODO(miek): match the qname better in the map
 	zone := plugin.Zones(f.Zones.Names).Matches(qname)
 	if zone == "" {
-		return plugin.NextOrFailure(f.Name(), f.Next, ctx, w, r)
+		m := new(dns.Msg)
+		m.SetReply(r)
+		m.Authoritative = true
+		m.Rcode = dns.RcodeNameError
+		w.WriteMsg(m)
+		return dns.RcodeNameError, nil
 	}
 
 	z, ok := f.Zones.Z[zone]
