@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/coredns/coredns/plugin"
 	clog "github.com/coredns/coredns/plugin/pkg/log"
@@ -36,14 +37,12 @@ func (f File) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (i
 	state := request.Request{W: w, Req: r}
 
 	qname := state.Name()
-	// TODO(miek): match the qname better in the map
-	zone := plugin.Zones(f.Zones.Names).Matches(qname)
+	zone, z := f.getMatchedZone(qname)
 	if zone == "" {
 		return plugin.NextOrFailure(f.Name(), f.Next, ctx, w, r)
 	}
 
-	z, ok := f.Zones.Z[zone]
-	if !ok || z == nil {
+	if z == nil {
 		return dns.RcodeServerFailure, nil
 	}
 
@@ -111,6 +110,26 @@ func (f File) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (i
 
 	w.WriteMsg(m)
 	return dns.RcodeSuccess, nil
+}
+
+func (f *File) getMatchedZone(qname string) (string, *Zone) {
+	if len(f.Z) == 0 {
+		return "", nil
+	}
+	for {
+		if len(qname) == 0 {
+			return "", nil
+		}
+		z, ok := f.Z[qname]
+		if ok {
+			return qname, z
+		}
+		index := strings.IndexByte(qname, '.')
+		if index < 0 {
+			return "", nil
+		}
+		qname = qname[index+1:]
+	}
 }
 
 // Name implements the Handler interface.
