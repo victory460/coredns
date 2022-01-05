@@ -15,7 +15,7 @@ status code. The health is exported, by default, on port 8080/health.
 health [ADDRESS]
 ~~~
 
-Optionally takes an address; the default is `:8080`. The health path is fixed to `/health`. The
+Optionally takes an address; the default is `localhost:8080`. The health path is fixed to `/health`. The
 health endpoint returns a 200 response code and the word "OK" when this server is healthy.
 
 An extra option can be set with this extended syntax:

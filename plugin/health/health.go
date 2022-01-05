@@ -27,7 +27,7 @@ type health struct {
 
 func (h *health) OnStartup() error {
 	if h.Addr == "" {
-		h.Addr = ":8080"
+		h.Addr = "localhost:8080"
 	}
 	h.stop = make(chan bool)
 	ln, err := reuseport.Listen("tcp", h.Addr)
