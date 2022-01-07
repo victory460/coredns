@@ -93,7 +93,66 @@ func (z *Zone) Lookup(ctx context.Context, state request.Request, qname string) 
 		}
 
 		elem, found = tr.Search(parts)
-		if !found {
+
+		if found {
+			// If we see DNAME records, we should return those.
+			if dnamerrs := elem.Type(dns.TypeDNAME); dnamerrs != nil {
+				// Only one DNAME is allowed per name. We just pick the first one to synthesize from.
+				dname := dnamerrs[0]
+				if cname := synthesizeCNAME(state.Name(), dname.(*dns.DNAME)); cname != nil {
+					var (
+						answer, ns, extra []dns.RR
+						rcode             Result
+					)
+
+					// We don't need to chase CNAME chain for synthesized CNAME
+					if qtype == dns.TypeCNAME {
+						answer = []dns.RR{cname}
+						ns = ap.ns(do)
+						extra = nil
+						rcode = Success
+					} else {
+						ctx = context.WithValue(ctx, dnsserver.LoopKey{}, loop+1)
+						answer, ns, extra, rcode = z.externalLookup(ctx, state, elem, []dns.RR{cname})
+					}
+
+					if do {
+						sigs := elem.Type(dns.TypeRRSIG)
+						sigs = rrutil.SubTypeSignature(sigs, dns.TypeDNAME)
+						dnamerrs = append(dnamerrs, sigs...)
+					}
+
+					// The relevant DNAME RR should be included in the answer section,
+					// if the DNAME is being employed as a substitution instruction.
+					answer = append(dnamerrs, answer...)
+
+					return answer, ns, extra, rcode
+				}
+				// The domain name that owns a DNAME record is allowed to have other RR types
+				// at that domain name, except those have restrictions on what they can coexist
+				// with (e.g. another DNAME). So there is nothing special left here.
+			}
+			// If we see NS records, it means the name as been delegated, and we should return the delegation.
+			if nsrrs := elem.Type(dns.TypeNS); nsrrs != nil {
+				// If the query is specifically for DS and the qname matches the delegated name, we should
+				// return the DS in the answer section and leave the rest empty, i.e. just continue the loop
+				// and continue searching.
+				if qtype == dns.TypeDS && elem.Name() == qname {
+					i++
+					continue
+				}
+
+				glue := tr.Glue(nsrrs, do)
+				if do {
+					dss := typeFromElem(elem, dns.TypeDS, do)
+					nsrrs = append(nsrrs, dss...)
+				}
+
+				return nil, nsrrs, glue, Delegation
+			}
+		}
+
+		if !found || (found && !shot) {
 			// Apex will always be found, when we are here we can search for a wildcard
 			// and save the result of that search. So when nothing match, but we have a
 			// wildcard we should expand the wildcard.
@@ -109,65 +168,6 @@ func (z *Zone) Lookup(ctx context.Context, state request.Request, qname string) 
 			i++
 			continue
 		}
-
-		// If we see DNAME records, we should return those.
-		if dnamerrs := elem.Type(dns.TypeDNAME); dnamerrs != nil {
-			// Only one DNAME is allowed per name. We just pick the first one to synthesize from.
-			dname := dnamerrs[0]
-			if cname := synthesizeCNAME(state.Name(), dname.(*dns.DNAME)); cname != nil {
-				var (
-					answer, ns, extra []dns.RR
-					rcode             Result
-				)
-
-				// We don't need to chase CNAME chain for synthesized CNAME
-				if qtype == dns.TypeCNAME {
-					answer = []dns.RR{cname}
-					ns = ap.ns(do)
-					extra = nil
-					rcode = Success
-				} else {
-					ctx = context.WithValue(ctx, dnsserver.LoopKey{}, loop+1)
-					answer, ns, extra, rcode = z.externalLookup(ctx, state, elem, []dns.RR{cname})
-				}
-
-				if do {
-					sigs := elem.Type(dns.TypeRRSIG)
-					sigs = rrutil.SubTypeSignature(sigs, dns.TypeDNAME)
-					dnamerrs = append(dnamerrs, sigs...)
-				}
-
-				// The relevant DNAME RR should be included in the answer section,
-				// if the DNAME is being employed as a substitution instruction.
-				answer = append(dnamerrs, answer...)
-
-				return answer, ns, extra, rcode
-			}
-			// The domain name that owns a DNAME record is allowed to have other RR types
-			// at that domain name, except those have restrictions on what they can coexist
-			// with (e.g. another DNAME). So there is nothing special left here.
-		}
-
-		// If we see NS records, it means the name as been delegated, and we should return the delegation.
-		if nsrrs := elem.Type(dns.TypeNS); nsrrs != nil {
-
-			// If the query is specifically for DS and the qname matches the delegated name, we should
-			// return the DS in the answer section and leave the rest empty, i.e. just continue the loop
-			// and continue searching.
-			if qtype == dns.TypeDS && elem.Name() == qname {
-				i++
-				continue
-			}
-
-			glue := tr.Glue(nsrrs, do)
-			if do {
-				dss := typeFromElem(elem, dns.TypeDS, do)
-				nsrrs = append(nsrrs, dss...)
-			}
-
-			return nil, nsrrs, glue, Delegation
-		}
-
 		i++
 	}
 
