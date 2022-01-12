@@ -42,6 +42,20 @@ var dnsTestCases = []test.Case{
 		},
 		Ns: miekAuth,
 	},
+	// the NoData test case for found entire name when lookup
+	{
+		Qname: "a.miek.nl.", Qtype: dns.TypeMX,
+		Ns: []dns.RR{
+			test.SOA("miek.nl.	1800	IN	SOA	linode.atoom.net. miek.miek.nl. 1282630057 14400 3600 604800 14400"),
+		},
+	},
+	// the NoData test case for found wildcard when lookup
+	{
+		Qname: "wildcard.nodata.miek.nl.", Qtype: dns.TypeMX,
+		Ns: []dns.RR{
+			test.SOA("miek.nl.	1800	IN	SOA	linode.atoom.net. miek.miek.nl. 1282630057 14400 3600 604800 14400"),
+		},
+	},
 	{
 		Qname: "mIeK.NL.", Qtype: dns.TypeAAAA,
 		Answer: []dns.RR{
@@ -236,4 +250,5 @@ dname           IN      DNAME   x
 srv		IN	SRV     10 10 8080 a.miek.nl.
 mx		IN	MX      10 a.miek.nl.
 
-ext-cname   IN   CNAME  example.com.`
+ext-cname   IN   CNAME  example.com.
+*.nodata        IN      A       139.162.196.79`
