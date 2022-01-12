@@ -132,6 +132,16 @@ var dnsTestCases = []test.Case{
 		Rcode: dns.RcodeServerFailure,
 		Ns:    miekAuth,
 	},
+	{
+		Qname: "sub.miek.nl.", Qtype: dns.TypeNS,
+		Ns: []dns.RR{
+			test.NS("sub.miek.nl.	1800	IN	NS	a.miek.nl."),
+		},
+		Extra: []dns.RR{
+			test.A("a.miek.nl.	1800	IN	A       139.162.196.78"),
+			test.AAAA("a.miek.nl.	1800	IN	AAAA	2a01:7e00::f03c:91ff:fef1:6735"),
+		},
+	},
 }
 
 const (
@@ -236,4 +246,5 @@ dname           IN      DNAME   x
 srv		IN	SRV     10 10 8080 a.miek.nl.
 mx		IN	MX      10 a.miek.nl.
 
-ext-cname   IN   CNAME  example.com.`
+ext-cname   IN   CNAME  example.com.
+sub         IN   NS     a.miek.nl.`

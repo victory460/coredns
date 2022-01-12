@@ -10,7 +10,7 @@ import (
 func (t *Tree) Glue(nsrrs []dns.RR, do bool) []dns.RR {
 	glue := []dns.RR{}
 	for _, rr := range nsrrs {
-		if ns, ok := rr.(*dns.NS); ok && dns.IsSubDomain(ns.Header().Name, ns.Ns) {
+		if ns, ok := rr.(*dns.NS); ok {
 			glue = append(glue, t.searchGlue(ns.Ns, do)...)
 		}
 	}
