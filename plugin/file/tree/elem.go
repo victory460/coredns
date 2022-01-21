@@ -12,6 +12,7 @@ type Elem struct {
 func newElem(rr dns.RR) *Elem {
 	e := Elem{m: make(map[uint16][]dns.RR)}
 	e.m[rr.Header().Rrtype] = []dns.RR{rr}
+	e.name = rr.Header().Name
 	return &e
 }
 
