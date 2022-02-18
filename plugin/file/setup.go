@@ -88,7 +88,7 @@ func fileParse(c *caddy.Controller) (Zones, error) {
 			fileName = filepath.Join(config.Root, fileName)
 		}
 
-		reader, err := os.Open(fileName)
+		reader, err := os.Open(filepath.Clean(fileName))
 		if err != nil {
 			openErr = err
 		}
@@ -126,11 +126,11 @@ func fileParse(c *caddy.Controller) (Zones, error) {
 				return Zones{}, c.Errf("unknown property '%s'", c.Val())
 			}
 		}
-	}
 
-	for origin := range z {
-		z[origin].ReloadInterval = reload
-		z[origin].Upstream = upstream.New()
+		for i := range origins {
+			z[origins[i]].ReloadInterval = reload
+			z[origins[i]].Upstream = upstream.New()
+		}
 	}
 
 	if openErr != nil {
