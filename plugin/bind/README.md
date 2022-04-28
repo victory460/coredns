@@ -82,6 +82,16 @@ You can exclude some addresses by their IP or interface name (The following will
 }
 ~~~
 
+If you want to bind one subnet hosts, you can use the following server block:
+
+```
+. {
+    bind 10.0.0.0/16
+}
+```
+
+Please make sure that these ip have been configured in advance on the network card.
+
 ## Bugs
 
 When defining more than one server block, take care not to bind more than one server to the same

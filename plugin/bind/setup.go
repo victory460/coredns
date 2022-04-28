@@ -1,9 +1,11 @@
 package bind
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"net"
+	"strings"
 
 	"github.com/coredns/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
@@ -91,10 +93,25 @@ func listIP(args []string, ifaces []net.Interface) ([]string, error) {
 			}
 		}
 		if !isIface {
-			if net.ParseIP(a) == nil {
-				return nil, fmt.Errorf("not a valid IP address or interface name: %q", a)
+			if strings.Contains(a, ".") && strings.Contains(a, "/") {
+				_, ipNet, err := net.ParseCIDR(a)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get the ipNet: %q", a)
+				}
+				mask := binary.BigEndian.Uint32(ipNet.Mask)
+				start := binary.BigEndian.Uint32(ipNet.IP)
+				finish := (start & mask) | (mask ^ 0xffffffff)
+				for i := start; i <= finish; i++ {
+					ip := make(net.IP, 4)
+					binary.BigEndian.PutUint32(ip, i)
+					all = append(all, fmt.Sprint(ip))
+				}
+			} else {
+				if net.ParseIP(a) == nil {
+					return nil, fmt.Errorf("not a valid IP address or interface name: %q", a)
+				}
+				all = append(all, a)
 			}
-			all = append(all, a)
 		}
 	}
 	return all, nil
